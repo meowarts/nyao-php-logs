@@ -9,21 +9,58 @@ const { exec } = require('child_process');
 const fs = require('fs');
 const logger = require('./logger');
 const servicePath = require('./servicePath');
+const remoteMain = require('@electron/remote/main');
+
+remoteMain.initialize();
+
+// Set app name BEFORE app.whenReady()
+app.setName('Nyao PHP Logs');
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isTesting = process.env.TESTING === 'true';
-const iconPath = path.join(__dirname, 'src', 'assets', 'icon.png'); // Icon path for both tray and main window
+const iconPath = path.join(__dirname, 'src', 'assets', 'code-error.png'); // Icon path for window
+const trayIconPath = path.join(__dirname, 'src', 'assets', 'tray-icon.png'); // Icon path for tray
 
 let tray = null;
+let recentErrors = [];
 
-function createTray(mainWindow) {
-  const image = nativeImage.createFromPath(iconPath);
-  tray = new Tray(image.resize({ width: 16, height: 16 }));
-  const contextMenu = Menu.buildFromTemplate([
+function getTimeAgo(date) {
+  const errorDate = date instanceof Date ? date : new Date(date);
+  const seconds = Math.floor((new Date() - errorDate) / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+function updateTrayMenuIfNeeded() {
+  const mainWindow = getMainWindow();
+  if (!mainWindow || !tray) return;
+
+  const menuItems = [
+    ...recentErrors.slice(0, 5).map((error, index) => ({
+      label: `${error.type.toUpperCase()}: ${error.message.slice(0, 50)}... (${getTimeAgo(error.date)})`,
+      click: () => {
+        if (process.platform === 'darwin') {
+          app.dock.show();
+        }
+        mainWindow.show();
+        mainWindow.focus();
+        mainWindow.webContents.send('selected-log', error);
+      }
+    })),
+    { type: 'separator' },
     {
       label: 'Show App',
       click: () => {
+        if (process.platform === 'darwin') {
+          app.dock.show();
+        }
         mainWindow.show();
+        mainWindow.focus();
       }
     },
     {
@@ -32,17 +69,41 @@ function createTray(mainWindow) {
         app.quit();
       }
     }
-  ]);
-  tray.setToolTip('Nyao PHP Errors');
+  ];
+
+  const contextMenu = Menu.buildFromTemplate(menuItems);
   tray.setContextMenu(contextMenu);
+}
+
+function createTray() {
+  // For macOS tray, we need a template image (16x16 or 32x32 at 2x)
+  const image = nativeImage.createFromPath(trayIconPath);
+  const resizedImage = image.resize({ width: 18, height: 18 });
+  resizedImage.setTemplateImage(true);
+
+  tray = new Tray(resizedImage);
+  tray.setToolTip('Nyao PHP Logs');
 
   tray.on('click', () => {
+    const mainWindow = getMainWindow();
+    if (!mainWindow) return;
+
     if (mainWindow.isVisible()) {
       mainWindow.hide();
+      if (process.platform === 'darwin') {
+        app.dock.hide();
+      }
     } else {
+      if (process.platform === 'darwin') {
+        app.dock.show();
+      }
       mainWindow.show();
+      mainWindow.focus();
     }
   });
+
+  // Context menu is automatically shown on macOS, but we can update it
+  updateTrayMenuIfNeeded();
 }
 
 function createWindow() {
@@ -53,10 +114,11 @@ function createWindow() {
     icon: iconPath,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
+      enableRemoteModule: true
     },
     titleBarStyle: 'hidden',
-    trafficLightPosition: { x: 20, y: 23.5 }
+    trafficLightPosition: { x: 20, y: 12 }
   });
 
   const indexPath = isDevelopment || isTesting ?
@@ -75,18 +137,30 @@ function createWindow() {
   mainWindow.loadURL(indexPath);
 
   mainWindow.once('ready-to-show', async () => {
-    mainWindow.setTitle('Nyao PHP Errors');
+    mainWindow.setTitle('Nyao PHP Logs');
+    // Show on startup for testing
     mainWindow.show();
+    if (isDevelopment) {
+      mainWindow.webContents.openDevTools();
+    }
     const logPath = isTesting
       ? path.join(__dirname, 'tests', 'logs', 'error.log')
       : path.join(app.getPath('home'), 'sites', 'ai', 'logs', 'php', 'error.log');
     await watchLogFile(mainWindow, logPath);
-    if (isDevelopment) {
-      mainWindow.webContents.openDevTools();
-    }
   });
 
   setMainWindow(mainWindow);
+
+  // Enable remote module for this window
+  remoteMain.enable(mainWindow.webContents);
+
+  // Hide window on close instead of quitting
+  mainWindow.on('close', (event) => {
+    if (!app.isQuitting) {
+      event.preventDefault();
+      mainWindow.hide();
+    }
+  });
 
   mainWindow.on('closed', () => {
     setMainWindow(null);
@@ -95,10 +169,11 @@ function createWindow() {
   mainWindow.on('resize', () => {
     if (mainWindow.isMinimized()) {
       mainWindow.hide();
+      if (process.platform === 'darwin') {
+        app.dock.hide();
+      }
     }
   });
-
-  createTray(mainWindow);
 }
 
 function openFileDialog() {
@@ -118,16 +193,22 @@ function openFileDialog() {
 }
 
 app.whenReady().then(() => {
+  // Hide dock icon on macOS for tray-only app
+  if (process.platform === 'darwin' && !isDevelopment) {
+    app.dock.hide();
+  }
+
+  // Create tray first
+  createTray();
+
+  // Then create window (hidden initially)
   createWindow();
 
-  // Set application icon for macOS
+  // Set application menu for macOS
   if (process.platform === 'darwin') {
-    app.dock.setIcon(iconPath);
-
-    // Set application menu
     const menu = Menu.buildFromTemplate([
       {
-        label: 'Nyao Error Logs',
+        label: 'Nyao PHP Logs',
         submenu: [
           { role: 'about' },
           { type: 'separator' },
@@ -160,7 +241,14 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-  app.quit();
+  // Don't quit on macOS when all windows are closed
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
+
+app.on('before-quit', () => {
+  app.isQuitting = true;
 });
 
 app.on('activate', () => {
@@ -177,8 +265,6 @@ app.on('open-file', (_, path) => {
   }
 });
 
-// Change application name
-app.setName('Nyao PHP Errors');
 app.commandLine.appendSwitch('disable-features', 'OutOfBlinkCors');
 
 ipcMain.on( 'watch-another-file', async ( event, logPath ) => {
@@ -205,6 +291,11 @@ ipcMain.on( 'open-file-dialog', openFileDialog );
 
 ipcMain.on( 'empty-file', ( event, filePath ) => {
   fs.writeFileSync( filePath, '' );
+});
+
+ipcMain.on( 'error-update', ( event, errors ) => {
+  recentErrors = errors;
+  updateTrayMenuIfNeeded();
 });
 
 module.exports = { createWindow };

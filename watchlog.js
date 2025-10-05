@@ -69,8 +69,11 @@ async function watchLogFile( mainWindow, logPath, reset = false ) {
           startProcessPosition = lastProcessedPosition;
           callLogUpdate({mainWindow, logPath, logEntries});
 
-          if (mainWindow.isMinimized()) {
-            sendNotification(logEntries[logEntries.length - 1]);
+          // Send notification for new log entries
+          if (logEntries.length > 0) {
+            const lastEntry = logEntries[logEntries.length - 1];
+            console.log('New log entry:', lastEntry.type);
+            sendNotification(lastEntry);
           }
         } catch (error) {
           console.error('Error processing log file:', error);

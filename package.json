@@ -1,8 +1,8 @@
 {
   "name": "php-error-logs-gui",
-  "productName": "Nyao Error Logs",
+  "productName": "Nyao PHP Logs",
   "version": "1.19.0",
-  "description": "Nyao PHP Errors",
+  "description": "Nyao PHP Logs",
   "license": "MIT",
   "private": false,
   "author": {
@@ -13,13 +13,15 @@
   ],
   "main": "main.js",
   "scripts": {
+    "dev": "cross-env NODE_ENV=development webpack serve --hot --host 0.0.0.0 --config=./webpack.dev.config.js --mode development",
     "prod": "cross-env NODE_ENV=production webpack --mode production --config webpack.build.config.js && electron --noDevServer .",
     "start": "cross-env NODE_ENV=development webpack serve --hot --host 0.0.0.0 --config=./webpack.dev.config.js --mode development",
-    "build": "cross-env NODE_ENV=production webpack --config webpack.build.config.js --mode production && npm run postpackage",
+    "build": "cross-env NODE_ENV=production webpack --config webpack.build.config.js --mode production && pnpm run postpackage",
     "postpackage": "electron-packager ./ --out=./builds --icon=./src/assets/icon.icns --overwrite --ignore=^/logs",
-    "test": "npx playwright test"
+    "test": "pnpm exec playwright test"
   },
   "dependencies": {
+    "@electron/remote": "^2.1.3",
     "postcss": "^8.4.38",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
@@ -41,9 +43,16 @@
     "electron-devtools-installer": "^3.2.0",
     "file-loader": "^6.2.0",
     "html-webpack-plugin": "^5.6.0",
+    "icss-utils": "^5.1.0",
     "mini-css-extract-plugin": "^2.9.0",
+    "postcss-modules-extract-imports": "^3.1.0",
+    "postcss-modules-local-by-default": "^4.2.0",
+    "postcss-modules-scope": "^3.2.1",
+    "postcss-modules-values": "^4.0.0",
     "react-hot-loader": "^4.13.1",
     "react-refresh": "^0.14.2",
+    "sass": "^1.93.2",
+    "sass-loader": "^16.0.5",
     "style-loader": "^3.3.1",
     "webpack": "^5.91.0",
     "webpack-cli": "^4.9.2",

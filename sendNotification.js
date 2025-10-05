@@ -12,10 +12,6 @@ let lastNotification = { type: null, message: null, timestamp: 0 };
  * @returns {boolean} whether the notification should be suppressed
  */
 function shouldSuppressNotification( type, message, cooldown = 3000 ) {
-  if (type !== 'error' && type !== 'warning') {
-    return true;
-  }
-
   const now = Date.now();
   const { type: lastType, message: lastMessage, timestamp } = lastNotification;
 
@@ -50,29 +46,38 @@ function formatLog( log ) {
 function sendNotification( log ) {
   const { type, message } = formatLog(log);
 
+  console.log('sendNotification called:', { type, message });
+
   if (shouldSuppressNotification(type, message)) {
+    console.log('Notification suppressed');
     return;
   }
 
+  console.log('Creating notification...');
   const notification = new Notification({
     title: `PHP ${type.charAt(0).toUpperCase() + type.slice(1)}`,
     body: message.slice(0, 250), // MacOS notifications are limited to 256 bytes
     silent: false,
-    timeoutType: 'default',
   });
 
   notification.on('click', () => {
     const mainWindow = getMainWindow();
     if (mainWindow) {
+      const { app } = require('electron');
+      if (process.platform === 'darwin') {
+        app.dock.show();
+      }
       if (mainWindow.isMinimized()) {
         mainWindow.restore();
       }
+      mainWindow.show();
       mainWindow.focus();
       mainWindow.webContents.send('selected-log', log);
     }
   });
 
   notification.show();
+  console.log('Notification shown');
   lastNotification = { type, message, timestamp: Date.now() };
 }
 

@@ -1,6 +1,24 @@
 html, body {
-  font-size: 14px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 11px;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+}
+
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 
 body {
@@ -49,59 +67,75 @@ body {
   .actionBar {
     display: flex;
     align-items: center;
-    padding: 15px 15px 15px 100px;
+    justify-content: center;
+    padding: 4px 12px 4px 80px;
     background-color: #303031;
-    justify-content: space-between;
-
-    .actions {
-      display: flex;
-      align-items: center;
-    }
+    min-height: 32px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 
     .label {
-      font-size: 15px;
-      margin-right: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
 
-    .button {
-      padding: 5px 10px;
-      background-color: #333;
-      color: white;
-      border: none;
-      border-radius: 3px;
-      cursor: pointer;
-      margin-right: 10px;
+    .statusMessage {
+      margin-left: 12px;
+      font-size: 11px;
+      color: #4aed60;
+    }
+  }
 
-      &:hover {
-        background-color: #444;
-      }
+  .button {
+    padding: 5px 10px;
+    background-color: #333;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-right: 10px;
+
+    &:hover {
+      background-color: #444;
+    }
+  }
+
+  .iconButton {
+    align-items: center;
+    background-color: transparent;
+    border-radius: 32px;
+    border-width: 0;
+    cursor: pointer;
+    display: flex;
+    height: 32px;
+    justify-content: center;
+    width: 32px;
+
+    &:hover {
+      background-color: #444;
     }
 
-    .iconButton {
-      align-items: center;
+    &:disabled {
       background-color: transparent;
-      border-radius: 40px;
-      border-width: 0;
-      cursor: pointer;
-      display: flex;
-      height: 40px;
-      justify-content: center;
-      width: 40px;
+      cursor: inherit;
+      opacity: 0.5;
+    }
 
-      &:hover {
-        background-color: #444;
-      }
-
-      &:disabled {
-        background-color: transparent;
-        cursor: inherit;
-        opacity: 0.5;
-      }
+    img {
+      width: 18px;
+      height: 18px;
     }
   }
 
   .content {
     background-color: #262727;
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      rgba(255, 255, 255, 0.02) 10px,
+      rgba(255, 255, 255, 0.02) 20px
+    );
     flex-grow: 1;
     overflow-y: auto;
     overflow-x: hidden;
@@ -115,13 +149,23 @@ body {
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 8px;
       padding: 10px 16px;
 
-      &.loading {
+      &.loading,
+      &.empty {
         align-items: center;
         justify-content: center;
         height: 100%;
+      }
+
+      .emptyLogs {
+        align-items: center;
+        display: flex;
+        height: 100%;
+        justify-content: center;
+        color: #888;
+        font-size: 13px;
       }
 
       h1 {
@@ -129,43 +173,111 @@ body {
       }
 
       .logEntry {
-        align-items: center;
-        background-color: #212121;
-        border: 2px solid #303031;
-        border-radius: 10px;
+        align-items: flex-start;
+        background-color: rgba(33, 33, 33, 0.85);
+        border: 1px solid #303031;
+        border-radius: 6px;
         cursor: pointer;
         display: flex;
         flex-direction: row;
-        gap: 4px;
-        padding: 10px;
+        gap: 10px;
+        padding: 8px 10px;
         word-break: break-all;
+        font-size: 11px;
+        line-height: 1.4;
+        user-select: none;
+
+        &:hover {
+          background-color: rgba(38, 38, 38, 0.9);
+        }
+
+        &.old {
+          opacity: 0.3;
+        }
 
         &.selected {
-          border-color: #fff;
+          border-color: #666;
         }
 
-        &.error {
-          color: #ff615c;
+        &.copied {
+          background-color: #2d5a2d;
+          animation: fadeToNormal 1s ease forwards;
 
-          &.selected {
-            border-color: #ff615c;
+          .timeBadge {
+            background-color: #3d6a3d;
+            animation: fadeTimeBadgeToNormal 1s ease forwards;
           }
         }
 
-        &.warning {
-          color: #ffc042;
-
-          &.selected {
-            border-color: #ffc042;
+        @keyframes fadeToNormal {
+          0% {
+            background-color: #2d5a2d;
+          }
+          100% {
+            background-color: #212121;
           }
         }
 
-        &.notice {
-          color: #4aed60;
-
-          &.selected {
-            border-color: #4aed60;
+        @keyframes fadeTimeBadgeToNormal {
+          0% {
+            background-color: #3d6a3d;
           }
+          100% {
+            background-color: #333;
+          }
+        }
+
+        .timeBadge {
+          background-color: #333;
+          border-radius: 4px;
+          padding: 8px;
+          font-size: 9px;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+          color: #888;
+          white-space: nowrap;
+          flex-shrink: 0;
+          align-self: stretch;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background-color 0.3s ease;
+        }
+
+        .logContent {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+
+          .timestamp {
+            color: #4aed60;
+            font-weight: 500;
+            font-size: 10px;
+          }
+
+          .message {
+            flex: 1;
+            color: #fff;
+          }
+        }
+
+        &.old {
+          .logContent .message {
+            color: #666;
+          }
+
+          .logContent .timestamp {
+            color: #444;
+          }
+
+          .timeBadge {
+            color: #555;
+          }
+        }
+
+        &.selected {
+          border-color: #666;
         }
 
         &.clickable {
@@ -175,15 +287,42 @@ body {
     }
   }
 
+  .statusBar {
+    background-color: #303031;
+    padding: 5px 16px;
+    font-size: 10px;
+    color: #888;
+    border-top: 1px solid #303031;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+    letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;
+    min-height: 22px;
+  }
+
   .footer {
     background-color: #303031;
     padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid #303031;
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
   }
 
   .search {
     align-items: center;
     display: flex;
     gap: 16px;
+    flex: 1;
 
     .searchTextField {
       color: #fff;
@@ -194,7 +333,7 @@ body {
       background-position: 10px center;
       border-width: 0;
       border-radius: 8px;
-      flex-grow: 1;
+      flex: 1;
       outline-width: 0;
       padding: 10px 10px 10px 34px;
     }
@@ -305,5 +444,42 @@ body {
     100% {
         transform: rotate(360deg);
     }
+  }
+
+  .textButton {
+    background-color: #333;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: #aaa;
+    cursor: pointer;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: 6px 12px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: #444;
+      border-color: #555;
+    }
+
+    &.active {
+      background-color: #4aed60;
+      border-color: #4aed60;
+      color: #000;
+    }
+  }
+
+  .rawLogs {
+    background-color: #1a1a1a;
+    color: #ddd;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+    font-size: 11px;
+    line-height: 1.6;
+    margin: 0;
+    padding: 16px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
   }
 }
