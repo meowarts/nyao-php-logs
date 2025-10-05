@@ -30,8 +30,6 @@ function App() {
     ipcRenderer.on('log-update', (event, { logPath, logEntries }) => {
       setOriginalLogData((prevData) => {
         const newEntries = [...prevData.entries, ...logEntries];
-        // Send error updates to main process for tray menu
-        ipcRenderer.send('error-update', newEntries);
         return { path: logPath, entries: newEntries };
       });
       setIsLoading(false);
@@ -48,13 +46,6 @@ function App() {
       ipcRenderer.send('watch-another-file', filePath);
     });
 
-    ipcRenderer.on('selected-log', (event, entry) => {
-      setSelectedEntry(entry);
-      if (scrollRef.current) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      }
-    });
-
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
         setShowModal(false);
@@ -65,7 +56,6 @@ function App() {
     return () => {
       ipcRenderer.removeAllListeners('log-update');
       ipcRenderer.removeAllListeners('selected-file');
-      ipcRenderer.removeAllListeners('selected-log');
       ipcRenderer.removeAllListeners('log-reset');
       window.removeEventListener('keydown', handleKeyDown);
     };

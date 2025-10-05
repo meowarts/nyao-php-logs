@@ -1,6 +1,6 @@
 # Nyao PHP Logs
 
-A minimalist macOS menu bar application for monitoring and viewing PHP error logs in real-time.
+A minimalist macOS application for monitoring and viewing PHP error logs in real-time.
 
 ![macOS](https://img.shields.io/badge/macOS-13%2B-blue)
 ![Electron](https://img.shields.io/badge/Electron-Latest-47848F)
@@ -8,10 +8,8 @@ A minimalist macOS menu bar application for monitoring and viewing PHP error log
 
 ## Features
 
-- **Menu Bar Integration**: Lives in your macOS menu bar for unobtrusive access
 - **Real-Time Monitoring**: Automatically watches log files and updates when new errors occur
 - **Native Notifications**: Get macOS notifications for new errors and warnings
-- **Quick Access Menu**: View the 5 most recent errors directly from the menu bar dropdown
 - **Terminal-Style UI**: Clean, monospace font interface focused on readability
 - **Smart Parsing**: Automatically parses PHP error logs including stack traces
 - **Stack Trace Navigation**: Click file paths in stack traces to open directly in VS Code
@@ -20,7 +18,7 @@ A minimalist macOS menu bar application for monitoring and viewing PHP error log
 
 ## Screenshots
 
-The app displays in the macOS menu bar, showing recent errors in a dropdown menu and a full window for detailed viewing with stack traces.
+The app displays as a standard macOS application with a full window for viewing errors and stack traces.
 
 ## Installation
 
@@ -86,7 +84,7 @@ pnpm test
 2. When changes are detected, only new content is read (efficient streaming)
 3. Log entries are parsed into structured data (date, type, message, stack trace)
 4. Updates are sent to the UI via Electron IPC
-5. The menu bar menu and notifications are updated automatically
+5. Notifications are sent for new errors automatically
 
 ### Default Log Path
 
@@ -99,18 +97,10 @@ The app recognizes three PHP log levels:
 - **Warning**: Runtime warnings
 - **Notice**: Runtime notices and deprecated warnings
 
-### Menu Bar Features
-
-- Click the tray icon to see the 5 most recent errors
-- Each menu item shows the error type, truncated message, and time elapsed
-- "Show App" opens the full window
-- "Exit" quits the application completely
-
 ### Window Behavior
 
-- Closing the window **hides** it to the menu bar (doesn't quit)
-- Reopen via "Show App" in the tray menu
-- To quit completely, use "Exit" in the tray menu
+- Closing the window **minimizes** it to the Dock (doesn't quit)
+- To quit completely, use the application menu or Cmd+Q
 
 ### UI Actions
 
@@ -160,13 +150,11 @@ The app recognizes three PHP log levels:
 - `open-file-in-vscode`: Open file at specific line in VS Code
 - `open-file-dialog`: Show file picker dialog
 - `empty-file`: Clear the current log file
-- `error-update`: Update tray menu with latest errors
 
 **Main → Renderer**
 - `log-update`: New log entries parsed
 - `log-reset`: Log file reset/cleared
 - `selected-file`: User selected a new file
-- `selected-log`: Default log path
 
 ## Development
 

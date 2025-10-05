@@ -1,6 +1,6 @@
 'use strict';
 
-const { app, BrowserWindow, ipcMain, dialog, Tray, Menu, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
 const { setMainWindow, getMainWindow } = require('./windowManager');
 const path = require('path');
 const url = require('url');
@@ -19,92 +19,6 @@ app.setName('Nyao PHP Logs');
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isTesting = process.env.TESTING === 'true';
 const iconPath = path.join(__dirname, 'src', 'assets', 'code-error.png'); // Icon path for window
-const trayIconPath = path.join(__dirname, 'src', 'assets', 'tray-icon.png'); // Icon path for tray
-
-let tray = null;
-let recentErrors = [];
-
-function getTimeAgo(date) {
-  const errorDate = date instanceof Date ? date : new Date(date);
-  const seconds = Math.floor((new Date() - errorDate) / 1000);
-  if (seconds < 60) return 'just now';
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
-
-function updateTrayMenuIfNeeded() {
-  const mainWindow = getMainWindow();
-  if (!mainWindow || !tray) return;
-
-  const menuItems = [
-    ...recentErrors.slice(0, 5).map((error, index) => ({
-      label: `${error.type.toUpperCase()}: ${error.message.slice(0, 50)}... (${getTimeAgo(error.date)})`,
-      click: () => {
-        if (process.platform === 'darwin') {
-          app.dock.show();
-        }
-        mainWindow.show();
-        mainWindow.focus();
-        mainWindow.webContents.send('selected-log', error);
-      }
-    })),
-    { type: 'separator' },
-    {
-      label: 'Show App',
-      click: () => {
-        if (process.platform === 'darwin') {
-          app.dock.show();
-        }
-        mainWindow.show();
-        mainWindow.focus();
-      }
-    },
-    {
-      label: 'Quit',
-      click: () => {
-        app.quit();
-      }
-    }
-  ];
-
-  const contextMenu = Menu.buildFromTemplate(menuItems);
-  tray.setContextMenu(contextMenu);
-}
-
-function createTray() {
-  // For macOS tray, we need a template image (16x16 or 32x32 at 2x)
-  const image = nativeImage.createFromPath(trayIconPath);
-  const resizedImage = image.resize({ width: 18, height: 18 });
-  resizedImage.setTemplateImage(true);
-
-  tray = new Tray(resizedImage);
-  tray.setToolTip('Nyao PHP Logs');
-
-  tray.on('click', () => {
-    const mainWindow = getMainWindow();
-    if (!mainWindow) return;
-
-    if (mainWindow.isVisible()) {
-      mainWindow.hide();
-      if (process.platform === 'darwin') {
-        app.dock.hide();
-      }
-    } else {
-      if (process.platform === 'darwin') {
-        app.dock.show();
-      }
-      mainWindow.show();
-      mainWindow.focus();
-    }
-  });
-
-  // Context menu is automatically shown on macOS, but we can update it
-  updateTrayMenuIfNeeded();
-}
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
@@ -154,25 +68,16 @@ function createWindow() {
   // Enable remote module for this window
   remoteMain.enable(mainWindow.webContents);
 
-  // Hide window on close instead of quitting
+  // Minimize window on close instead of quitting
   mainWindow.on('close', (event) => {
     if (!app.isQuitting) {
       event.preventDefault();
-      mainWindow.hide();
+      mainWindow.minimize();
     }
   });
 
   mainWindow.on('closed', () => {
     setMainWindow(null);
-  });
-
-  mainWindow.on('resize', () => {
-    if (mainWindow.isMinimized()) {
-      mainWindow.hide();
-      if (process.platform === 'darwin') {
-        app.dock.hide();
-      }
-    }
   });
 }
 
@@ -193,15 +98,7 @@ function openFileDialog() {
 }
 
 app.whenReady().then(() => {
-  // Hide dock icon on macOS for tray-only app
-  if (process.platform === 'darwin' && !isDevelopment) {
-    app.dock.hide();
-  }
-
-  // Create tray first
-  createTray();
-
-  // Then create window (hidden initially)
+  // Create window
   createWindow();
 
   // Set application menu for macOS
@@ -291,11 +188,6 @@ ipcMain.on( 'open-file-dialog', openFileDialog );
 
 ipcMain.on( 'empty-file', ( event, filePath ) => {
   fs.writeFileSync( filePath, '' );
-});
-
-ipcMain.on( 'error-update', ( event, errors ) => {
-  recentErrors = errors;
-  updateTrayMenuIfNeeded();
 });
 
 module.exports = { createWindow };

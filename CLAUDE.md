@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Nyao Error Logs is an Electron-based macOS menu bar application for viewing and monitoring PHP error logs in real-time. It runs persistently in the menu bar, displays the 5 most recent errors in a dropdown menu, and provides native macOS notifications for new errors. The app uses a terminal-style monospace font and focuses on minimalistic, distraction-free error viewing.
+Nyao Error Logs is an Electron-based macOS application for viewing and monitoring PHP error logs in real-time. It runs as a standard macOS application in the Dock and provides native macOS notifications for new errors. The app uses a terminal-style monospace font and focuses on minimalistic, distraction-free error viewing.
 
 ## Commands
 
@@ -62,16 +62,8 @@ Each log entry has:
 - `stacktrace`: Array of stack trace lines, each with `index`, `detail`, `fileName`, `lineNumber`
 
 ### IPC Events
-- **Renderer → Main**: `watch-another-file`, `open-file-in-vscode`, `open-file-dialog`, `empty-file`, `error-update`
-- **Main → Renderer**: `log-update`, `log-reset`, `selected-file`, `selected-log`
-
-### Menu Bar Integration
-- App lives in the macOS menu bar with a tray icon
-- Clicking the tray icon shows a dropdown menu with the 5 most recent errors/warnings
-- Each menu item shows error type, truncated message, and time ago
-- "Show App" menu item opens the main window
-- "Exit" menu item quits the application
-- Closing the main window hides it instead of quitting (use Exit to quit)
+- **Renderer → Main**: `watch-another-file`, `open-file-in-vscode`, `open-file-dialog`, `empty-file`
+- **Main → Renderer**: `log-update`, `log-reset`, `selected-file`
 
 ## Testing
 
@@ -97,10 +89,10 @@ Three webpack configs:
 - Filters out Xdebug connection messages
 
 ### Window Behavior
-- Closing the window hides it to menu bar instead of quitting
-- Window can be reopened via "Show App" in the tray menu
-- App must be quit via "Exit" in the tray menu
-- Shows native macOS notifications for all new errors/warnings (not just when hidden)
+- Closing the window minimizes it to the Dock instead of quitting
+- Window can be reopened by clicking the Dock icon
+- App can be quit via application menu or Cmd+Q
+- Shows native macOS notifications for all new errors/warnings
 - macOS-specific: traffic light positioning, dock icon, app menu
 - Default log path: `~/sites/ai/logs/php/error.log` (can be changed via File > Open)
 
@@ -115,4 +107,3 @@ Three webpack configs:
 - No external state library - uses React hooks (useState, useEffect, useRef)
 - Maintains both `originalLogData` (all entries) and `logData` (filtered entries)
 - Search/filter performed on original data to preserve all entries
-- Sends error updates to main process via IPC to update tray menu
